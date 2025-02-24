@@ -44,9 +44,29 @@ plant_tracker = PlantTracker()
 
 @app.route('/api/sensor_data', methods=['GET'])
 def get_sensor_data():
-    data = load_data()
-    response = jsonify(data.to_dict(orient='records'))
-    return response
+    try:
+        data = load_data()
+        if data.empty:
+            return jsonify({"error": "No data available"}), 404
+            
+        # Convert to records and handle NaN values
+        records = data.replace({np.nan: None}).to_dict(orient='records')
+        
+        # Add debug print
+        print("Sending response with", len(records), "records")
+        
+        return jsonify(records)
+    except Exception as e:
+        print(f"Error in get_sensor_data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+def run_sensor_data():
+    os.system('python sensor_data.py')
+
+def run_plant_tracker():
+    os.system('python plant_tracker.py')
 
 if __name__ == '__main__':
+    threading.Thread(target=run_sensor_data).start()
+    threading.Thread(target=run_plant_tracker).start()
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

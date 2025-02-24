@@ -25,8 +25,25 @@ def get_latest_data():
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        df = pd.read_csv(DATA_FILE)
+        try:
+            # Try reading with utf-8 encoding first
+            df = pd.read_csv(DATA_FILE, encoding='utf-8')
+        except UnicodeDecodeError:
+            try:
+                # If utf-8 fails, try with cp1252 (Windows default)
+                df = pd.read_csv(DATA_FILE, encoding='cp1252')
+            except UnicodeDecodeError:
+                # If that also fails, try with latin1
+                df = pd.read_csv(DATA_FILE, encoding='latin1')
+        
+        # Convert timestamp column to datetime
         df['timestamp'] = pd.to_datetime(df['timestamp'])
+        
+        # Add debug print
+        print("Data loaded successfully. Shape:", df.shape)
+        print("Columns:", df.columns.tolist())
+        print("First row:", df.iloc[0].to_dict())
+        
         return df
     return pd.DataFrame()
 
